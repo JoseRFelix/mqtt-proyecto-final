@@ -13,6 +13,8 @@ function getClient() {
   });
 }
 
+const SPEAK_THRESHOLD = 10; // time before app start to speak
+
 export default function App() {
   const [duration, setDuration] = React.useState(null);
   const client = React.useRef(null);
@@ -20,14 +22,18 @@ export default function App() {
   React.useEffect(() => {
     client.current = getClient();
     client.current.on("connect", () => {
-      client.current.subscribe("start:counter", (err) => {
-        console.log(err);
-      });
+      client.current.subscribe("start:counter");
+      client.current.subscribe("patch:counter");
+      client.current.subscribe("stop:traffic");
     });
 
     client.current.on("message", (topic, message) => {
       console.log(`Received message from topic: ${topic}`);
       const parsedMessage = JSON.parse(message.toString());
+
+      if (topic === "stop:traffic") {
+        return setDuration(null);
+      }
 
       if (parsedMessage && parsedMessage.duration) {
         setDuration(parsedMessage.duration);
@@ -38,28 +44,25 @@ export default function App() {
   }, [setDuration, duration]);
 
   React.useEffect(() => {
-    let intervalId;
-    if (duration > 0) {
-      intervalId = setTimeout(() => setDuration(duration - 1), 1000);
-    }
+    if (duration !== null) {
+      if (duration <= SPEAK_THRESHOLD) {
+        Speech.speak(duration.toString());
+      }
 
-    if (duration <= 0 && duration !== null) {
-      setDuration(null);
-    }
+      if (duration === 30) {
+        Speech.speak(duration.toString());
+      }
 
-    return () => clearInterval(intervalId);
-  }, [setDuration, duration]);
-
-  React.useEffect(() => {
-    if (duration <= 10 && duration !== null) {
-      Speech.speak(duration.toString());
+      if (duration === 15) {
+        Speech.speak(duration.toString());
+      }
     }
   });
 
-  if (!duration) {
+  if (duration <= 0) {
     return (
       <View style={styles.container}>
-        <Text>Waiting for Traffic Light...</Text>
+        <Text>Esperando semáforo...</Text>
       </View>
     );
   }
@@ -75,11 +78,11 @@ export default function App() {
           return [true, 0];
         }}
       >
-        {({ remainingTime, animatedColor }) => (
+        {({ animatedColor }) => (
           <Animated.Text
             style={{ ...styles.remainingTime, color: animatedColor }}
           >
-            {remainingTime}
+            {duration}
           </Animated.Text>
         )}
       </CountdownCircleTimer>

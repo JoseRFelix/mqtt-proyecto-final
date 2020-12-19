@@ -6,7 +6,7 @@
     "ios": "react-native run-ios",
     "web": "expo start --web",
     "start:native": "react-native start",
-    "start": "expo start --tunnel"
+    "start": "expo start"
   },
   "dependencies": {
     "@taoqf/react-native-mqtt": "^3.0.4",
