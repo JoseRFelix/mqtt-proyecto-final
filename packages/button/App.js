@@ -19,7 +19,7 @@ export default function App() {
   React.useEffect(() => {
     client.current = getClient();
     client.current.on("connect", () => {
-      client.current.subscribe("stop:traffic");
+      client.current.subscribe("patch:counter");
     });
 
     client.current.on("message", (topic, message) => {
@@ -35,9 +35,9 @@ export default function App() {
     const payload = {
       duration: 60,
     };
-    client.current.publish("put:traffic", JSON.stringify(payload));
-
-    setSent(true);
+    client.current.publish("put:traffic", JSON.stringify(payload), () => {
+      setSent(true);
+    });
   };
 
   return (

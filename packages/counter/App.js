@@ -31,6 +31,7 @@ export default function App() {
       console.log(`Received message from topic: ${topic}`);
       const parsedMessage = JSON.parse(message.toString());
 
+      console.log(topic);
       if (topic === "stop:traffic") {
         return setDuration(null);
       }

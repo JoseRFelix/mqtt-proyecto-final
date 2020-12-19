@@ -39,13 +39,14 @@ function App() {
       const parsedMessage = JSON.parse(message.toString());
 
       if (parsedMessage && parsedMessage.duration) {
+        console.log(timeToYellow, timeToRed);
         if (timeToYellow !== null && timeToRed === null) {
           return setTimeToYellow((timeToYellow) => timeToYellow - 5);
         }
 
-        if (counter === null) {
+        if (counter === null && duration.current === null) {
           duration.current = parsedMessage.duration;
-          changeToRed({ delay: DELAY_BEFORE_START });
+          return changeToRed({ delay: DELAY_BEFORE_START });
         }
       }
     });
@@ -76,20 +77,16 @@ function App() {
       intervalId = setTimeout(() => setTimeToRed(timeToRed - 1), 1000);
     }
 
-    if (timeToRed <= 0 && timeToRed !== null) {
-      setState((state) => ({ ...state, YellowOn: false, RedOn: true }));
-
-      if (counter === null) {
+    if (timeToRed <= 0 && timeToRed !== null && counter === null) {
+      console.log("sending message to topic: start:counter");
+      const payload = {
+        duration: duration.current,
+      };
+      client.current.publish("start:counter", JSON.stringify(payload), () => {
+        setState((state) => ({ ...state, YellowOn: false, RedOn: true }));
         setCounter(duration.current);
-
-        console.log("sending message to topic: start:counter");
-        const payload = {
-          duration: duration.current,
-        };
-        client.current.publish("start:counter", JSON.stringify(payload));
-      }
-
-      setTimeToRed(null);
+        setTimeToRed(null);
+      });
     }
 
     return () => clearInterval(intervalId);
@@ -110,14 +107,15 @@ function App() {
     }
 
     if (counter <= 0 && counter !== null) {
-      setState((state) => ({ ...state, RedOn: false, GreenOn: true }));
-      setCounter(null);
-
       console.log("sending message to topic: stop:traffic");
       const payload = {
         msg: "traffic light is green now",
       };
-      client.current.publish("stop:traffic", JSON.stringify(payload));
+      client.current.publish("stop:traffic", JSON.stringify(payload), () => {
+        setState((state) => ({ ...state, RedOn: false, GreenOn: true }));
+        setCounter(null);
+        duration.current = null;
+      });
     }
 
     return () => clearInterval(intervalId);
