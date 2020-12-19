@@ -1,12 +1,28 @@
-import { StatusBar } from 'expo-status-bar';
-import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import * as React from "react";
+import { View, StyleSheet, Animated } from "react-native";
+import Constants from "expo-constants";
+import { CountdownCircleTimer } from "react-native-countdown-circle-timer";
 
 export default function App() {
   return (
     <View style={styles.container}>
-      <Text>Open up App.js to start working on your app!</Text>
-      <StatusBar style="auto" />
+      <CountdownCircleTimer
+        isPlaying
+        duration={10}
+        colors="#004777"
+        onComplete={() => {
+          console.log("ON_COMPLETE BEFORE RETURN");
+          return [true, 0];
+        }}
+      >
+        {({ remainingTime, animatedColor }) => (
+          <Animated.Text
+            style={{ ...styles.remainingTime, color: animatedColor }}
+          >
+            {remainingTime}
+          </Animated.Text>
+        )}
+      </CountdownCircleTimer>
     </View>
   );
 }
@@ -14,8 +30,13 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: "center",
+    alignItems: "center",
+    paddingTop: Constants.statusBarHeight,
+    backgroundColor: "#ecf0f1",
+    padding: 8,
+  },
+  remainingTime: {
+    fontSize: 46,
   },
 });
