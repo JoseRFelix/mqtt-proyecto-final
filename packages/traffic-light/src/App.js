@@ -12,8 +12,28 @@ function getClient() {
   });
 }
 
+function getDistanceFromLatLonInKm({ lat1, lon1, lat2, lon2 }) {
+  var R = 6371; // Radius of the earth in km
+  var dLat = deg2rad(lat2 - lat1); // deg2rad below
+  var dLon = deg2rad(lon2 - lon1);
+  var a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(deg2rad(lat1)) *
+      Math.cos(deg2rad(lat2)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  var d = R * c; // Distance in km
+  return d;
+}
+
+function deg2rad(deg) {
+  return deg * (Math.PI / 180);
+}
+
 const TIME_TO_RED = 3; // time to change from yellow to red
-const DELAY_BEFORE_START = 5; // time before traffic light starts the process of changing
+const DELAY_BEFORE_START = 30; // time before traffic light starts the process of changing
+const GEOLOCATION = [54.980206086231, 82.898068362003];
 
 function App() {
   const [state, setState] = React.useState({
@@ -26,6 +46,7 @@ function App() {
   const [timeToRed, setTimeToRed] = React.useState(null);
   const client = React.useRef(null);
   const duration = React.useRef(null);
+  const users = React.useRef(new Map());
 
   React.useEffect(() => {
     client.current = getClient();
@@ -38,13 +59,35 @@ function App() {
 
       const parsedMessage = JSON.parse(message.toString());
 
-      if (parsedMessage && parsedMessage.duration) {
-        console.log(timeToYellow, timeToRed);
+      if (
+        parsedMessage &&
+        parsedMessage.duration &&
+        parsedMessage.userId &&
+        parsedMessage.location
+      ) {
+        console.log(
+          getDistanceFromLatLonInKm({
+            lat1: parsedMessage.location[0],
+            lon1: parsedMessage.location[1],
+            lat2: GEOLOCATION[0],
+            lon2: GEOLOCATION[1],
+          })
+        );
+        if (
+          getDistanceFromLatLonInKm({
+            lat1: parsedMessage.location[0],
+            lon1: parsedMessage.location[1],
+            lat2: GEOLOCATION[0],
+            lon2: GEOLOCATION[1],
+          }) > 10
+        ) {
+        }
         if (timeToYellow !== null && timeToRed === null) {
           return setTimeToYellow((timeToYellow) => timeToYellow - 5);
         }
 
         if (counter === null && duration.current === null) {
+          users.current.set(parsedMessage.userId, true);
           duration.current = parsedMessage.duration;
           return changeToRed({ delay: DELAY_BEFORE_START });
         }
@@ -53,6 +96,21 @@ function App() {
 
     return () => client.current.end();
   }, [setTimeToYellow, timeToYellow, timeToRed, counter]);
+
+  // Send analytics
+  React.useEffect(() => {
+    const intervalId = setInterval(() => {
+      console.log(users);
+      console.log("sending message to topic: get:analytics");
+      const payload = {
+        uniqueUsersAmount: users.current.size,
+      };
+      console.log(payload);
+      client.current.publish("get:analytics", JSON.stringify(payload));
+    }, 1000);
+
+    return () => clearInterval(intervalId);
+  }, []);
 
   // TO YELLOW
   React.useEffect(() => {
@@ -67,7 +125,7 @@ function App() {
       setTimeToRed(TIME_TO_RED);
     }
 
-    return () => clearInterval(intervalId);
+    return () => clearTimeout(intervalId);
   }, [timeToYellow]);
 
   // TO RED
@@ -89,7 +147,7 @@ function App() {
       });
     }
 
-    return () => clearInterval(intervalId);
+    return () => clearTimeout(intervalId);
   }, [counter, setTimeToRed, timeToRed]);
 
   // TO GREEN
@@ -118,7 +176,7 @@ function App() {
       });
     }
 
-    return () => clearInterval(intervalId);
+    return () => clearTimeout(intervalId);
   }, [counter]);
 
   const changeToRed = ({ delay }) => {
