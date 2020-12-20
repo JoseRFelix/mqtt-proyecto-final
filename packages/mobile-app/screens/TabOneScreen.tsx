@@ -52,7 +52,7 @@ export default function TabOneScreen() {
   }, [duration]);
 
   const stopTraffic = () => {
-    const GEOLOCATION = [54.980206086231, 82.898068332003];
+    const GEOLOCATION = [54.980206086231, 83.898068332003];
     setLoading(true);
     console.log("sending message to topic: put:traffic");
     const payload = {
@@ -77,9 +77,9 @@ export default function TabOneScreen() {
           <Counter duration={duration} />
         </View>
       ) : loading ? (
-        <Text>El semáfaro cambiará a rojo prontamente!</Text>
+        <Text>El semáforo cambiará a rojo prontamente!</Text>
       ) : (
-        <Button title="Parar semáforo" onPress={stopTraffic} />
+        <Button title="Parar tráfico" onPress={stopTraffic} />
       )}
     </View>
   );
