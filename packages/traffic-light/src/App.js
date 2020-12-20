@@ -44,6 +44,7 @@ function App() {
   const [counter, setCounter] = React.useState(null);
   const [timeToYellow, setTimeToYellow] = React.useState(null);
   const [timeToRed, setTimeToRed] = React.useState(null);
+  const [invalid, setInvalid] = React.useState(false);
   const client = React.useRef(null);
   const duration = React.useRef(null);
   const users = React.useRef(new Map());
@@ -65,23 +66,17 @@ function App() {
         parsedMessage.userId &&
         parsedMessage.location
       ) {
-        console.log(
-          getDistanceFromLatLonInKm({
-            lat1: parsedMessage.location[0],
-            lon1: parsedMessage.location[1],
-            lat2: GEOLOCATION[0],
-            lon2: GEOLOCATION[1],
-          })
-        );
         if (
           getDistanceFromLatLonInKm({
             lat1: parsedMessage.location[0],
             lon1: parsedMessage.location[1],
             lat2: GEOLOCATION[0],
             lon2: GEOLOCATION[1],
-          }) > 10
+          }) > 1
         ) {
+          return setInvalid(true);
         }
+
         if (timeToYellow !== null && timeToRed === null) {
           return setTimeToYellow((timeToYellow) => timeToYellow - 5);
         }
@@ -180,6 +175,7 @@ function App() {
   }, [counter]);
 
   const changeToRed = ({ delay }) => {
+    setInvalid(false);
     setTimeToYellow(delay);
   };
 
@@ -188,6 +184,11 @@ function App() {
       {timeToYellow && (
         <h1 style={{ marginBottom: 12 }}>
           El semáforo cambiará en: {timeToYellow}
+        </h1>
+      )}
+      {invalid && (
+        <h1 style={{ marginBottom: 12, color: "red", textAlign: "center" }}>
+          Usuario envió una petición fuera del rango de acción
         </h1>
       )}
 
